@@ -9,7 +9,38 @@ from readthedocs.builds.models import APIVersion
 from ..exceptions import RepositoryError
 from ..models import Feature
 
+from dataclasses import dataclass # needed for changing dictionaries to DataClass objects.
+
 log = structlog.get_logger(__name__)
+
+@dataclass(frozen=True)
+class BranchInfo:
+    identifier: str
+    verbose_name: str
+
+    def get_id(self) -> str:
+        return self.identifier
+    
+    def get_name(self) -> str:
+        return self.verbose_name
+
+@dataclass(frozen=True)
+class TagInfo:
+    identifier: str
+    verbose_name: str
+
+    def get_id(self) -> str:
+        return self.identifier
+    
+    def get_name(self) -> str:
+        return self.verbose_name
+
+# No constructors are created: DataClass module 
+# creates the constructor automatically.
+
+# Both data classes have the same parameters because
+# several functions (the ones I've found, at least) parse both
+# tag and branch info at the same time.
 
 
 class SyncRepositoryMixin:
@@ -48,21 +79,24 @@ class SyncRepositoryMixin:
             include_branches=sync_branches,
         )
 
-        tags_data = [
-            {
-                "identifier": v.identifier,
-                "verbose_name": v.verbose_name,
-            }
-            for v in tags
-        ]
+        # tags_data = [
+        #     {
+        #         "identifier": v.identifier,
+        #         "verbose_name": v.verbose_name,
+        #     }
+        #     for v in tags
+        # ]
 
-        branches_data = [
-            {
-                "identifier": v.identifier,
-                "verbose_name": v.verbose_name,
-            }
-            for v in branches
-        ]
+        # branches_data = [
+        #     {
+        #         "identifier": v.identifier,
+        #         "verbose_name": v.verbose_name,
+        #     }
+        #     for v in branches
+        # ]
+
+        tags_data     = [TagInfo(v.identifier, v.verbose_name)    for v in tags    ]
+        branches_data = [BranchInfo(v.identifier, v.verbose_name) for v in branches]
 
         log.debug("Synchronizing versions.", branches=branches, tags=tags)
 
@@ -88,7 +122,7 @@ class SyncRepositoryMixin:
         :param data: Dict containing the versions from tags and branches
         """
         version_names = [
-            version["verbose_name"] for version in tags_data + branches_data
+            version.verbose_name for version in tags_data + branches_data
         ]
         counter = Counter(version_names)
         for reserved_name in [STABLE_VERBOSE_NAME, LATEST_VERBOSE_NAME]:
