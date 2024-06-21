@@ -36,11 +36,16 @@ def sync_versions_to_db(project, versions, type):
     :param type: internal or external version
     :returns: set of versions' slug added
     """
+
+    # ! does this vvv still work now that dicts are data classes?
+
     old_version_values = project.versions.filter(type=type).values_list(
         "verbose_name",
         "identifier",
     )
     old_versions = dict(old_version_values)
+
+    # ! does this ^^^ still work now that dicts are data classes?
 
     # Add new versions
     versions_to_create = []
@@ -48,8 +53,8 @@ def sync_versions_to_db(project, versions, type):
     has_user_stable = False
     has_user_latest = False
     for version in versions:
-        version_id = version["identifier"]
-        version_name = version["verbose_name"]
+        version_id = version.get_id()
+        version_name = version.get_name()
         if version_name == STABLE_VERBOSE_NAME:
             has_user_stable = True
             created_version, created = _set_or_create_version(
